@@ -14,6 +14,10 @@ func (v Vec2) ToRL() rl.Vector2 {
 	return rl.NewVector2(float32(v.X), float32(v.Y))
 }
 
+func FromRL(vec rl.Vector2) Vec2 {
+	return NewVec2(float64(vec.X), float64(vec.Y))
+}
+
 func NewVec2(x float64, y float64) Vec2 {
 	return Vec2{X: x, Y: y}
 

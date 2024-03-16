@@ -1,9 +1,7 @@
 package app
 
 import (
-	"fmt"
-
-	"github.com/RugiSerl/physics/app/projects/simulation"
+	simulation "github.com/RugiSerl/physics/app/projects/bodySimulation"
 	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -36,8 +34,6 @@ func create() {
 func update() {
 	values.UpdateValues()
 	rl.BeginDrawing()
-
-	fmt.Println(values.Dt)
 
 	rl.ClearBackground(rl.RayWhite)
 	rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
