@@ -16,6 +16,6 @@ type Body struct {
 	Acceleration m.Vec2
 }
 
-func (b Body) Render() {
-	rl.DrawCircleV(b.Position.ToRL(), BODY_SIZE, rl.Blue)
+func (b Body) Render(scale float64) {
+	rl.DrawCircleV(b.Position.Scale(scale).ToRL(), BODY_SIZE*float32(scale), rl.Blue)
 }

@@ -1,13 +1,15 @@
 package app
 
 import (
+	"github.com/RugiSerl/physics/app/camera"
 	simulation "github.com/RugiSerl/physics/app/projects/bodySimulation"
 	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var (
-	sim *simulation.Simulation
+	sim      *simulation.Simulation
+	myCamera *camera.Camera2D
 )
 
 func Run() {
@@ -27,6 +29,7 @@ func create() {
 
 	sim = simulation.Create()
 	rl.ToggleFullscreen()
+	myCamera = camera.NewCamera()
 
 	rl.SetTargetFPS(-1)
 }
@@ -35,9 +38,15 @@ func update() {
 	values.UpdateValues()
 	rl.BeginDrawing()
 
-	rl.ClearBackground(rl.RayWhite)
+	myCamera.UpdateCamera()
+	myCamera.Begin()
+
 	rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
+	rl.ClearBackground(rl.RayWhite)
+
 	sim.Update()
+	myCamera.End()
+
 	rl.EndDrawing()
 }
 

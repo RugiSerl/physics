@@ -9,7 +9,6 @@ import (
 	m "github.com/RugiSerl/physics/app/math"
 	"github.com/RugiSerl/physics/app/physicUnit"
 	"github.com/RugiSerl/physics/app/values"
-	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type Simulation struct {
@@ -19,12 +18,12 @@ type Simulation struct {
 
 func Create() *Simulation {
 	s := new(Simulation)
-
+	mass := float64(1000)
 	s.bodies = []Systems.Body{}
-	s.forces = make([]m.Vec2, 101)
+	s.forces = make([]m.Vec2, 100)
 	for x := float64(0); x < 10; x++ {
 		for y := float64(0); y < 10; y++ {
-			s.bodies = append(s.bodies, Systems.Body{Mass: 10000, Position: m.NewVec2(300+x*100*rand.Float64(), 100+y*100*rand.Float64()), Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
+			s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: m.NewVec2(mass*rand.Float64(), mass*rand.Float64()), Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
 		}
 	}
 
@@ -38,7 +37,7 @@ func (s *Simulation) Update() {
 	}
 	var average m.Vec2 = m.NewVec2(0, 0)
 	for i, b := range s.bodies {
-		b.Render()
+		b.Render(0.5)
 		s.bodies[i] = updatePosition(b, s.forces[i])
 
 		average = average.Add(s.bodies[i].Position)
@@ -46,7 +45,7 @@ func (s *Simulation) Update() {
 	}
 	if len(s.bodies) != 0 {
 		average = average.Scale(1 / float64(len(s.bodies)))
-		rl.DrawCircleV(average.ToRL(), 10, rl.Red)
+		//rl.DrawCircleV(average.ToRL(), 10, rl.Red)
 		fmt.Println(average)
 	}
 
@@ -61,7 +60,7 @@ func (s *Simulation) updateForces(b Systems.Body) physicUnit.Force2D {
 	for _, otherBody := range s.bodies {
 		if otherBody != b {
 			vector := otherBody.Position.Substract(b.Position)
-			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / math.Pow(vector.GetNorm(), 3))
+			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / math.Pow(vector.GetNorm(), 2))
 
 			force = force.Add(attraction)
 		}
