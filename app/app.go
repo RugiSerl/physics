@@ -41,10 +41,10 @@ func update() {
 	myCamera.UpdateCamera()
 	myCamera.Begin()
 
-	rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
+	rl.DrawText(sim.ProvideDescription(), 190, 200, 20, rl.LightGray)
 	rl.ClearBackground(rl.RayWhite)
 
-	sim.Update()
+	sim.Update(myCamera)
 	myCamera.End()
 
 	rl.EndDrawing()

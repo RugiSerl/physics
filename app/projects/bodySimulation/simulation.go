@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 
 	"github.com/RugiSerl/physics/app/Systems"
+	"github.com/RugiSerl/physics/app/camera"
 	m "github.com/RugiSerl/physics/app/math"
 	"github.com/RugiSerl/physics/app/physicUnit"
-	"github.com/RugiSerl/physics/app/values"
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
+
+const (
+	BODY_MASS = float64(1000)
 )
 
 type Simulation struct {
@@ -18,41 +24,58 @@ type Simulation struct {
 
 func Create() *Simulation {
 	s := new(Simulation)
-	mass := float64(1000)
 	s.bodies = []Systems.Body{}
-	s.forces = make([]m.Vec2, 100)
-	for x := float64(0); x < 10; x++ {
-		for y := float64(0); y < 10; y++ {
-			s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: m.NewVec2(mass*rand.Float64(), mass*rand.Float64()), Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
-		}
-	}
+	s.forces = []physicUnit.Force2D{}
 
 	return s
 }
 
-func (s *Simulation) Update() {
+func (s *Simulation) Update(camera *camera.Camera2D) {
 	for i, b := range s.bodies {
 		s.forces[i] = s.updateForces(b)
 
 	}
 	var average m.Vec2 = m.NewVec2(0, 0)
 	for i, b := range s.bodies {
+		b.UpdatePosition(s.forces[i])
+		s.bodies[i] = b.Copy()
 		b.Render(0.5)
-		s.bodies[i] = updatePosition(b, s.forces[i])
 
 		average = average.Add(s.bodies[i].Position)
 
 	}
 	if len(s.bodies) != 0 {
 		average = average.Scale(1 / float64(len(s.bodies)))
-		//rl.DrawCircleV(average.ToRL(), 10, rl.Red)
+		rl.DrawCircleV(average.Scale(0.5).ToRL(), 10, rl.Red)
 		fmt.Println(average)
 	}
 
+	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) || rl.IsKeyDown(rl.KeyLeftShift) {
+		s.spawnBody(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).Scale(2), BODY_MASS)
+	} else if rl.IsKeyPressed(rl.KeySpace) {
+		s.spawnMany(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).Scale(2))
+
+	}
+
+	//rl.DrawRectangleV(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).ToRL(), rl.NewVector2(20, 20), rl.Red)
+
+}
+
+func (s *Simulation) spawnMany(position m.Vec2) {
+	for x := float64(-6); x < 6; x++ {
+		for y := float64(-6); y < 6; y++ {
+			s.spawnBody(m.NewVec2(BODY_MASS*(rand.Float64()-.5), BODY_MASS*(rand.Float64()-.5)).Add(position), BODY_MASS)
+		}
+	}
+}
+
+func (s *Simulation) spawnBody(position m.Vec2, mass float64) {
+	s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: position, Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
+	s.forces = append(s.forces, m.Vec2{0, 0})
 }
 
 func (s *Simulation) ProvideDescription() string {
-	return "Simulate the movements of bodies using the Newton formula"
+	return "Simulate the movements of bodies using the Newton formula\nCurrently " + strconv.Itoa(len(s.bodies)) + " bodies"
 }
 
 func (s *Simulation) updateForces(b Systems.Body) physicUnit.Force2D {
@@ -67,11 +90,4 @@ func (s *Simulation) updateForces(b Systems.Body) physicUnit.Force2D {
 	}
 
 	return force
-}
-
-func updatePosition(b Systems.Body, force physicUnit.Force2D) Systems.Body {
-	b.Acceleration = force.Scale(1 / b.Mass)
-	b.Speed = b.Speed.Add(b.Acceleration.Scale(values.Dt))
-	b.Position = b.Position.Add(b.Speed.Scale(values.Dt))
-	return b
 }
