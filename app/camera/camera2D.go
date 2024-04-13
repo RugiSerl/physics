@@ -4,7 +4,6 @@ import (
 	"math"
 
 	m "github.com/RugiSerl/physics/app/math"
-	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -29,41 +28,40 @@ func NewCamera() *Camera2D {
 	c.targetZoom = 0
 
 	return c
-
 }
 
 // met à jour la caméra pour visualiser le jeu et appliquer les transformations de cette dernière
 func (c *Camera2D) UpdateCamera() {
+	var speed float64 = CAMERA_SPEED * float64(rl.GetFrameTime()) / float64(c.Zoom)
 
 	if rl.IsKeyDown(rl.KeyLeft) || rl.IsKeyDown(rl.KeyA) {
-		c.targetPosition.X -= CAMERA_SPEED * values.Dt
+		c.targetPosition.X -= speed
 	}
 	if rl.IsKeyDown(rl.KeyRight) || rl.IsKeyDown(rl.KeyD) {
-		c.targetPosition.X += CAMERA_SPEED * values.Dt
+		c.targetPosition.X += speed
 	}
 	if rl.IsKeyDown(rl.KeyUp) || rl.IsKeyDown(rl.KeyW) {
-		c.targetPosition.Y -= CAMERA_SPEED * values.Dt
+		c.targetPosition.Y -= speed
 	}
 	if rl.IsKeyDown(rl.KeyDown) || rl.IsKeyDown(rl.KeyS) {
-		c.targetPosition.Y += CAMERA_SPEED * values.Dt
+		c.targetPosition.Y += speed
 	}
 
-	c.Target = m.FromRL(c.Target).Add(c.targetPosition.Substract(m.FromRL(c.Target)).Scale(float64(rl.GetFrameTime()) / CAMERA_SMOOTH * ZOOM_AMOUNT)).ToRL()
-	//décalage de la caméra, pour que la cible, c'est-à-dire les coordonnées de la caméra, se trouve au milieu de l'écran
+	c.Target = m.FromRL(c.Target).Add(c.targetPosition.Substract(m.FromRL(c.Target)).Scale(float64(rl.GetFrameTime()) / CAMERA_SMOOTH)).ToRL()
+	// décalage de la caméra, pour que la cible, c'est-à-dire les coordonnées de la caméra, se trouve au milieu de l'écran
 	c.Offset = rl.NewVector2(float32(rl.GetScreenWidth())/2, float32(rl.GetScreenHeight())/2)
 
-	//met à jour le zoom de la caméra
+	// met à jour le zoom de la caméra
 
 	c.targetZoom += rl.GetMouseWheelMove()
 
 	c.logarithmicZoom += (c.targetZoom - c.logarithmicZoom) / ZOOM_SMOOTH * rl.GetFrameTime()
 
 	c.Zoom = float32(math.Exp(float64(c.logarithmicZoom)))
-
 }
 
 func (c *Camera2D) ConvertToWorldCoordinates(coordinates m.Vec2) m.Vec2 {
-	return coordinates.Substract(m.FromRL(rl.Vector2Subtract(c.Offset, c.Target))).Scale(1 / float64(c.Zoom))
+	return coordinates.Substract(m.FromRL(c.Offset)).Scale(1 / float64(c.Zoom)).Add(m.FromRL(c.Target))
 }
 
 func (c *Camera2D) Begin() {

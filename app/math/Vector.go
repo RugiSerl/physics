@@ -20,7 +20,6 @@ func FromRL(vec rl.Vector2) Vec2 {
 
 func NewVec2(x float64, y float64) Vec2 {
 	return Vec2{X: x, Y: y}
-
 }
 
 // ---------------

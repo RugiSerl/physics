@@ -32,7 +32,6 @@ func Create() *Simulation {
 func (s *Simulation) Update(camera *camera.Camera2D) {
 	for i, b := range s.bodies {
 		s.forces[i] = s.updateForces(b)
-
 	}
 	for i, b := range s.bodies {
 		b.UpdatePosition(s.forces[i])
@@ -45,17 +44,13 @@ func (s *Simulation) Update(camera *camera.Camera2D) {
 		s.spawnBody(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())), BODY_MASS)
 	} else if rl.IsKeyPressed(rl.KeySpace) {
 		s.spawnMany(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())))
-
 	}
-
-	//rl.DrawRectangleV(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).ToRL(), rl.NewVector2(20, 20), rl.Red)
-
 }
 
 func (s *Simulation) spawnMany(position m.Vec2) {
 	for x := float64(-6); x < 6; x++ {
 		for y := float64(-6); y < 6; y++ {
-			s.spawnBody(m.NewVec2(BODY_MASS*(rand.Float64()-.5), BODY_MASS*(rand.Float64()-.5)).Add(position), BODY_MASS)
+			s.spawnBody(m.NewVec2((rand.Float64()-.5), (rand.Float64()-.5)).Add(position), BODY_MASS)
 		}
 	}
 }

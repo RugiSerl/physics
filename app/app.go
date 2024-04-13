@@ -16,13 +16,11 @@ func Run() {
 	create()
 	for !rl.WindowShouldClose() {
 		update()
-
 	}
 	quit()
 }
 
 func create() {
-
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 
 	rl.InitWindow(int32(rl.GetMonitorWidth(0)), int32(rl.GetMonitorHeight(0)), "raylib [core] example - basic window")
@@ -41,7 +39,7 @@ func update() {
 	myCamera.UpdateCamera()
 	myCamera.Begin()
 
-	rl.DrawText(sim.ProvideDescription(), 190, 200, 20, rl.LightGray)
+	rl.DrawText(sim.ProvideDescription(), 0, 0, 20, rl.LightGray)
 	rl.ClearBackground(rl.RayWhite)
 
 	if rl.IsKeyPressed(rl.KeyKpAdd) {
@@ -58,7 +56,6 @@ func update() {
 
 func quit() {
 	rl.CloseWindow()
-
 }
 
 func updateInput() {
