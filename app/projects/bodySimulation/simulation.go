@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	BODY_MASS = float64(1000)
+	BODY_MASS = float64(100000000000000)
 )
 
 type Simulation struct {
@@ -39,7 +39,7 @@ func (s *Simulation) Update(camera *camera.Camera2D) {
 	for i, b := range s.bodies {
 		b.UpdatePosition(s.forces[i])
 		s.bodies[i] = b.Copy()
-		b.Render(0.5)
+		b.Render()
 
 		average = average.Add(s.bodies[i].Position)
 
@@ -51,9 +51,9 @@ func (s *Simulation) Update(camera *camera.Camera2D) {
 	}
 
 	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) || rl.IsKeyDown(rl.KeyLeftShift) {
-		s.spawnBody(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).Scale(2), BODY_MASS)
+		s.spawnBody(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())), BODY_MASS)
 	} else if rl.IsKeyPressed(rl.KeySpace) {
-		s.spawnMany(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())).Scale(2))
+		s.spawnMany(camera.ConvertToWorldCoordinates(m.FromRL(rl.GetMousePosition())))
 
 	}
 
@@ -82,7 +82,7 @@ func (s *Simulation) updateForces(b Systems.Body) physicUnit.Force2D {
 	var force physicUnit.Force2D = m.NewVec2(0, 0)
 	for _, otherBody := range s.bodies {
 		if otherBody != b {
-			vector := otherBody.Position.Substract(b.Position)
+			vector := otherBody.Position.Substract(b.Position).Normalize()
 			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / math.Pow(vector.GetNorm(), 2))
 
 			force = force.Add(attraction)

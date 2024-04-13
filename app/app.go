@@ -44,6 +44,12 @@ func update() {
 	rl.DrawText(sim.ProvideDescription(), 190, 200, 20, rl.LightGray)
 	rl.ClearBackground(rl.RayWhite)
 
+	if rl.IsKeyPressed(rl.KeyKpAdd) {
+		values.DtFactor *= 2
+	}
+	if rl.IsKeyPressed(rl.KeyKpSubtract) {
+		values.DtFactor /= 2
+	}
 	sim.Update(myCamera)
 	myCamera.End()
 

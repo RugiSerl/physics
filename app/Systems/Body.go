@@ -18,10 +18,10 @@ type Body struct {
 	Acceleration m.Vec2
 }
 
-func (b Body) Render(scale float64) {
+func (b Body) Render() {
 	c := 1 - 1/(b.Speed.GetNorm()/1000+1)
 
-	rl.DrawCircleV(b.Position.Scale(scale).ToRL(), BODY_SIZE*float32(scale), rl.NewColor(0, uint8(c*255), 0, 255))
+	rl.DrawCircleV(b.Position.ToRL(), BODY_SIZE, rl.NewColor(0, uint8(c*255), 0, 255))
 }
 
 func (b *Body) UpdatePosition(force physicUnit.Force2D) {

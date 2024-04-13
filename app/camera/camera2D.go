@@ -45,7 +45,7 @@ func (c *Camera2D) UpdateCamera() {
 		c.targetPosition.Y += CAMERA_SPEED * values.Dt
 	}
 
-	c.Target = math.FromRL(c.Target).Add(c.targetPosition.Substract(math.FromRL(c.Target)).Scale(values.Dt / CAMERA_SMOOTH / float64(c.Zoom))).ToRL()
+	c.Target = math.FromRL(c.Target).Add(c.targetPosition.Substract(math.FromRL(c.Target)).Scale(values.Dt / CAMERA_SMOOTH)).ToRL()
 	//décalage de la caméra, pour que la cible, c'est-à-dire les coordonnées de la caméra, se trouve au milieu de l'écran
 	c.Offset = rl.NewVector2(float32(rl.GetScreenWidth())/2, float32(rl.GetScreenHeight())/2)
 
