@@ -1,7 +1,6 @@
 package simulation
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"strconv"
@@ -35,19 +34,11 @@ func (s *Simulation) Update(camera *camera.Camera2D) {
 		s.forces[i] = s.updateForces(b)
 
 	}
-	var average m.Vec2 = m.NewVec2(0, 0)
 	for i, b := range s.bodies {
 		b.UpdatePosition(s.forces[i])
 		s.bodies[i] = b.Copy()
 		b.Render()
 
-		average = average.Add(s.bodies[i].Position)
-
-	}
-	if len(s.bodies) != 0 {
-		average = average.Scale(1 / float64(len(s.bodies)))
-		rl.DrawCircleV(average.Scale(0.5).ToRL(), 10, rl.Red)
-		fmt.Println(average)
 	}
 
 	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) || rl.IsKeyDown(rl.KeyLeftShift) {

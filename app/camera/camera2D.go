@@ -1,7 +1,9 @@
 package camera
 
 import (
-	"github.com/RugiSerl/physics/app/math"
+	"math"
+
+	m "github.com/RugiSerl/physics/app/math"
 	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -15,14 +17,15 @@ const (
 
 type Camera2D struct {
 	rl.Camera2D
-	targetPosition math.Vec2
-	targetZoom     float32
+	targetPosition  m.Vec2
+	targetZoom      float32
+	logarithmicZoom float32
 }
 
 func NewCamera() *Camera2D {
 	c := new(Camera2D)
 	c.Camera2D = rl.NewCamera2D(rl.NewVector2(0, 0), rl.NewVector2(0, 0), 0, 1)
-	c.targetPosition = math.NewVec2(0, 0)
+	c.targetPosition = m.NewVec2(0, 0)
 	c.targetZoom = 0
 
 	return c
@@ -45,7 +48,7 @@ func (c *Camera2D) UpdateCamera() {
 		c.targetPosition.Y += CAMERA_SPEED * values.Dt
 	}
 
-	c.Target = math.FromRL(c.Target).Add(c.targetPosition.Substract(math.FromRL(c.Target)).Scale(values.Dt / CAMERA_SMOOTH)).ToRL()
+	c.Target = m.FromRL(c.Target).Add(c.targetPosition.Substract(m.FromRL(c.Target)).Scale(float64(rl.GetFrameTime()) / CAMERA_SMOOTH * ZOOM_AMOUNT)).ToRL()
 	//décalage de la caméra, pour que la cible, c'est-à-dire les coordonnées de la caméra, se trouve au milieu de l'écran
 	c.Offset = rl.NewVector2(float32(rl.GetScreenWidth())/2, float32(rl.GetScreenHeight())/2)
 
@@ -53,15 +56,14 @@ func (c *Camera2D) UpdateCamera() {
 
 	c.targetZoom += rl.GetMouseWheelMove()
 
-	c.Zoom += (c.targetZoom - c.Zoom) / ZOOM_SMOOTH * float32(values.Dt)
-	if c.targetZoom < 1 { //1 est le minimum
-		c.targetZoom = 1
-	}
+	c.logarithmicZoom += (c.targetZoom - c.logarithmicZoom) / ZOOM_SMOOTH * rl.GetFrameTime()
+
+	c.Zoom = float32(math.Exp(float64(c.logarithmicZoom)))
 
 }
 
-func (c *Camera2D) ConvertToWorldCoordinates(coordinates math.Vec2) math.Vec2 {
-	return coordinates.Substract(math.FromRL(rl.Vector2Subtract(c.Offset, c.Target))).Scale(1 / float64(c.Zoom))
+func (c *Camera2D) ConvertToWorldCoordinates(coordinates m.Vec2) m.Vec2 {
+	return coordinates.Substract(m.FromRL(rl.Vector2Subtract(c.Offset, c.Target))).Scale(1 / float64(c.Zoom))
 }
 
 func (c *Camera2D) Begin() {
