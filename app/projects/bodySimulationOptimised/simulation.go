@@ -2,7 +2,6 @@ package simulationOptimised
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"strconv"
 
@@ -20,7 +19,7 @@ const (
 type Simulation struct {
 	bodies []Systems.Body
 	forces []physicUnit.Force2D
-	tree   QuadTree
+	tree   *QuadTree
 }
 
 func Create() *Simulation {
@@ -33,15 +32,15 @@ func Create() *Simulation {
 }
 
 func (s *Simulation) Update(camera *camera.Camera2D) {
-	s.tree.ShowRegion()
-	for i, b := range s.bodies {
-		s.forces[i] = s.updateForces(b)
-	}
+	s.tree.ShowRegion(0)
+	// s.tree.UpdateMass()
+	s.tree.UpdateForcesNormal([]*Systems.Body{})
+	fmt.Println("pos ", s.tree.ListChildren())
+	s.tree.UpdatePositions(s.tree)
 	for i, b := range s.bodies {
 		// b.UpdatePosition(s.forces[i])
 		s.bodies[i] = b.Copy()
 		b.Render()
-
 	}
 
 	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) || rl.IsKeyDown(rl.KeyLeftShift) {
@@ -64,26 +63,12 @@ func (s *Simulation) spawnMany(position m.Vec2) {
 }
 
 func (s *Simulation) spawnBody(position m.Vec2, mass float64) {
-	fmt.Println("-------------------------------\nAdding..")
+	fmt.Print("-------------------------------\nAdding..")
 	s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: position, Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
 	s.tree.Insert(&s.bodies[len(s.bodies)-1]) // add body we created
 	s.forces = append(s.forces, m.Vec2{X: 0, Y: 0})
 }
 
 func (s *Simulation) ProvideDescription() string {
-	return "Simulate the movements of bodies using the Newton formula\nCurrently " + strconv.Itoa(len(s.bodies)) + " bodies"
-}
-
-func (s *Simulation) updateForces(b Systems.Body) physicUnit.Force2D {
-	var force physicUnit.Force2D = m.NewVec2(0, 0)
-	for _, otherBody := range s.bodies {
-		if otherBody != b {
-			vector := otherBody.Position.Substract(b.Position).Normalize()
-			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / math.Pow(vector.GetNorm(), 2))
-
-			force = force.Add(attraction)
-		}
-	}
-
-	return force
+	return "Simulate the movements of bodies using the Newton formula and QuadTrees.\nCurrently " + strconv.Itoa(len(s.bodies)) + " bodies"
 }
