@@ -2,13 +2,13 @@ package app
 
 import (
 	"github.com/RugiSerl/physics/app/camera"
-	simulation "github.com/RugiSerl/physics/app/projects/bodySimulation"
+	simulationOptimised "github.com/RugiSerl/physics/app/projects/bodySimulationOptimised"
 	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var (
-	sim      *simulation.Simulation
+	sim      *simulationOptimised.Simulation
 	myCamera *camera.Camera2D
 )
 
@@ -25,7 +25,7 @@ func create() {
 
 	rl.InitWindow(int32(rl.GetMonitorWidth(0)), int32(rl.GetMonitorHeight(0)), "raylib [core] example - basic window")
 
-	sim = simulation.Create()
+	sim = simulationOptimised.Create()
 	rl.ToggleFullscreen()
 	myCamera = camera.NewCamera()
 
