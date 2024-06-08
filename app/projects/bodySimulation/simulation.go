@@ -36,7 +36,8 @@ func (s *Simulation) Update(camera *camera.Camera2D) {
 		s.forces[i] = s.updateForces(b)
 	}
 	for i, b := range s.bodies {
-		b.UpdatePosition(s.forces[i])
+		b.ApplyForce(s.forces[i])
+		b.UpdatePosition()
 		s.bodies[i] = b.Copy()
 		b.Render()
 
@@ -58,7 +59,7 @@ func (s *Simulation) spawnMany(position m.Vec2) {
 }
 
 func (s *Simulation) spawnBody(position m.Vec2, mass float64) {
-	s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: position, Speed: m.NewVec2(0, 0), Acceleration: m.NewVec2(0, 0)})
+	s.bodies = append(s.bodies, Systems.Body{Mass: mass, Position: position, Speed: m.NewVec2(0, 0), ForceApplied: m.NewVec2(0, 0)})
 	s.forces = append(s.forces, m.Vec2{0, 0})
 }
 

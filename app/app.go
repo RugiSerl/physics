@@ -2,14 +2,14 @@ package app
 
 import (
 	"github.com/RugiSerl/physics/app/camera"
-	simulationOptimised "github.com/RugiSerl/physics/app/projects/bodySimulationOptimised"
+	"github.com/RugiSerl/physics/app/projects"
 	"github.com/RugiSerl/physics/app/values"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var (
-	sim      *simulationOptimised.Simulation
-	myCamera *camera.Camera2D
+	myProject projects.Project
+	myCamera  *camera.Camera2D
 )
 
 func Run() {
@@ -23,10 +23,8 @@ func Run() {
 func create() {
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 
-	rl.InitWindow(int32(rl.GetMonitorWidth(0)), int32(rl.GetMonitorHeight(0)), "raylib [core] example - basic window")
-
-	sim = simulationOptimised.Create()
-	rl.ToggleFullscreen()
+	rl.InitWindow(int32(rl.GetMonitorWidth(0)), int32(rl.GetMonitorHeight(0)), "Physics")
+	myProject = projects.NewProject(projects.PROJECT_SPRING)
 	myCamera = camera.NewCamera()
 
 	rl.SetTargetFPS(-1)
@@ -39,7 +37,7 @@ func update() {
 	myCamera.UpdateCamera()
 	myCamera.Begin()
 
-	rl.DrawText(sim.ProvideDescription(), 0, 0, 20, rl.LightGray)
+	rl.DrawText(myProject.ProvideDescription(), 0, 0, 20, rl.LightGray)
 	rl.ClearBackground(rl.RayWhite)
 
 	if rl.IsKeyPressed(rl.KeyKpAdd) {
@@ -48,7 +46,7 @@ func update() {
 	if rl.IsKeyPressed(rl.KeyKpSubtract) {
 		values.DtFactor /= 2
 	}
-	sim.Update(myCamera)
+	myProject.Update(myCamera)
 	myCamera.End()
 
 	rl.EndDrawing()

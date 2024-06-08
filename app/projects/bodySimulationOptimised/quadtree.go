@@ -2,7 +2,6 @@ package simulationOptimised
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/RugiSerl/physics/app/Systems"
 	"github.com/RugiSerl/physics/app/math"
@@ -12,7 +11,9 @@ import (
 )
 
 const (
-	APPROXIMATION_RATE = 1.0
+	TREE_BORDER_SIZE   = 2e10 // The border of the square the tree is covering
+	APPROXIMATION_RATE = 1.0  // times TREE_BORDER_SIZE. The size of the region in which the calculation isn't an approximation
+
 )
 
 type TreeType int
@@ -25,7 +26,6 @@ const (
 
 type TreeContent struct {
 	treeType    TreeType
-	Initialized bool               // keep track if the tree has been created in NewQuadTree()
 	body        *Systems.Body      // body pointer, if the tree is a leaf
 	ForceOnBody physicUnit.Force2D // forced applied on the body
 	MassCenter  math.Vec2          // Mass center of the children, for approximation
@@ -42,10 +42,9 @@ type QuadTree struct {
 func NewQuadTree(region math.Rect) *QuadTree {
 	return &QuadTree{
 		Data: TreeContent{
-			treeType:    Empty,
-			body:        nil,
-			Initialized: true,
-			Region:      region,
+			treeType: Empty,
+			body:     nil,
+			Region:   region,
 		},
 		Children: make([]*QuadTree, 4),
 	}
@@ -90,10 +89,10 @@ func (q *QuadTree) Insert(b *Systems.Body) {
 		q.Data.body = nil // get rid of the body (wait this is weird out of context)
 	case Node:
 		sub := selectSubtree(b.Position, q.Data.Region)
-		if q.Children[sub] != nil {
+		if q.Children[sub] == nil {
 			q.Children[sub] = NewQuadTree(subRegion(q.Data.Region, sub))
-			q.Children[sub].Insert(b)
 		}
+		q.Children[sub].Insert(b)
 
 	}
 }
@@ -156,8 +155,11 @@ func (q *QuadTree) UpdateMass() {
 		totalMass := float64(0) // sum of the weight in the average
 
 		for _, child := range q.Children {
-			massCenter = massCenter.Add(child.Data.MassCenter).Scale(child.Data.Mass)
-			totalMass += child.Data.Mass
+			if child != nil {
+				massCenter = massCenter.Add(child.Data.MassCenter).Scale(child.Data.Mass)
+				totalMass += child.Data.Mass
+			}
+
 		}
 
 		q.Data.Mass = totalMass
@@ -170,29 +172,61 @@ func (q *QuadTree) UpdateMass() {
 //----------------------------------------------------------------------------------------
 // UPDATE FORCES -------------------------------------------------------------------------
 
+func (q *QuadTree) UpdateForces(stack math.Stack[*QuadTree]) {
+	switch q.Data.treeType {
+	case Empty: // Nothing to update
+		return
+	case Leaf: // Base case - Heart of the function
+		treeNormal := q //this is the tree in which the forces will computed whithout approximation
+		var err error
+
+		for treeNormal.Data.Region.Size.X < APPROXIMATION_RATE*TREE_BORDER_SIZE { // X==Y, since the region is a square
+			treeNormal, err = stack.Pop()
+			if err != nil { // this should not happen if APPROXIMATION_RATE<=1
+				panic(err)
+			}
+		}
+		// Compute the tree close enough to have no approximation
+		bodiesInTreeNormal := treeNormal.ListChildren()
+		UpdateBodyForces(q.Data.body, bodiesInTreeNormal)
+
+		// Compute using center of mass of the adjacent trees
+		treeAbove, e := stack.Pop()
+		if e == nil { // no need to calculate if we are already at the root of the tree
+			UpdateBodyForces(q.Data.body, []*Systems.Body{
+				treeAbove.Children[0].Data.body,
+			})
+		}
+
+	case Node:
+		stack.Append(q)
+		/*for _, child := range q.Children {
+			if child != nil {
+				child.UpdateForces(stack)
+			}
+		}*/
+	}
+}
+
 // Update the force without approximation
 func (q *QuadTree) UpdateForcesNormal(otherBodies []*Systems.Body) {
 	if len(otherBodies) == 0 { // Case if the tree is the parent of the subtree being calculated normally
-
 		otherBodies = q.ListChildren()
-
 	}
 
 	switch q.Data.treeType {
-	case Empty:
+	case Empty: // Nothing to update
 		return
-	case Leaf:
+	case Leaf: // Base case
 		q.Data.ForceOnBody = UpdateBodyForces(q.Data.body, otherBodies)
 
 	case Node:
 		for _, child := range q.Children {
 			if child != nil {
 				child.UpdateForcesNormal(otherBodies)
-
 			}
 		}
 	}
-
 }
 
 // Update forces of a single body
@@ -203,7 +237,7 @@ func UpdateBodyForces(b *Systems.Body, otherBodies []*Systems.Body) physicUnit.F
 		if otherBody != b {
 			vector := otherBody.Position.Substract(b.Position).Normalize()
 			r := vector.GetNorm()
-			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / r * r)
+			attraction := vector.Scale(physicUnit.G * otherBody.Mass * b.Mass / (r * r))
 
 			force = force.Add(attraction)
 		}
@@ -221,15 +255,12 @@ func (q *QuadTree) ListChildren() []*Systems.Body {
 		return []*Systems.Body{q.Data.body}
 	case Node:
 		slice := []*Systems.Body{}
-		for i, child := range q.Children {
+		for _, child := range q.Children {
 			if child != nil {
-				fmt.Println(i, "th child: ", child)
-				fmt.Println("part 1: ", slice, "part 2: ", child.ListChildren())
-				slice = slices.Concat(slice, child.ListChildren())
+				slice = append(slice, child.ListChildren()...)
 
 			}
 		}
-		fmt.Println("final slice: ", slice)
 
 		return slice
 	}
@@ -245,8 +276,8 @@ func (q *QuadTree) UpdatePositions(root *QuadTree) {
 	case Empty:
 		return
 	case Leaf:
-
-		q.Data.body.UpdatePosition(q.Data.ForceOnBody)
+		q.Data.body.ApplyForce(q.Data.ForceOnBody)
+		q.Data.body.UpdatePosition()
 
 		// Now the body is probably no longer in the good region :(
 		// This is why we re-insert it from the root of the tree and make sure this becomes empty
@@ -269,6 +300,23 @@ func (q *QuadTree) UpdatePositions(root *QuadTree) {
 //----------------------------------------------------------------------------------------
 // USEFUL FUNCTIONS ----------------------------------------------------------------------
 
+func (q *QuadTree) AmountOfLeaf() int {
+	n := 0
+	if q.Data.treeType != Empty {
+		for _, child := range q.Children {
+			if child != nil {
+				if child.Data.treeType == Node {
+					n += child.AmountOfLeaf()
+				} else if child.Data.treeType == Leaf {
+					n++
+				}
+			}
+
+		}
+	}
+	return n
+}
+
 // Print the tree in console
 func (q *QuadTree) PrintTree() {
 	fmt.Print(q.Data)
@@ -280,11 +328,11 @@ func (q *QuadTree) PrintTree() {
 }
 
 // Print the tree on screen
-func (q *QuadTree) ShowRegion(n uint8) {
-	q.Data.Region.Draw(rl.NewColor(0, 0, 255-n, 128))
+func (q *QuadTree) ShowRegion() {
+	q.Data.Region.Draw(rl.NewColor(0, 0, 255, 20))
 	for _, child := range q.Children {
 		if child != nil {
-			child.ShowRegion(n + 20)
+			child.ShowRegion()
 
 		}
 	}

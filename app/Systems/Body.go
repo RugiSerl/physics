@@ -15,7 +15,7 @@ type Body struct {
 	Mass         float64
 	Position     m.Vec2
 	Speed        m.Vec2
-	Acceleration m.Vec2
+	ForceApplied m.Vec2
 }
 
 func (b Body) Render() {
@@ -24,10 +24,15 @@ func (b Body) Render() {
 	rl.DrawCircleV(b.Position.ToRL(), BODY_SIZE, rl.NewColor(0, uint8(c*255), 0, 255))
 }
 
-func (b *Body) UpdatePosition(force physicUnit.Force2D) {
-	b.Acceleration = force.Scale(1 / b.Mass)
-	b.Speed = b.Speed.Add(b.Acceleration.Scale(values.Dt))
+func (b *Body) ApplyForce(force physicUnit.Force2D) {
+	b.ForceApplied = b.ForceApplied.Add(force)
+}
+
+func (b *Body) UpdatePosition() {
+	acceleration := b.ForceApplied.Scale(1 / b.Mass)
+	b.Speed = b.Speed.Add(acceleration.Scale(values.Dt))
 	b.Position = b.Position.Add(b.Speed.Scale(values.Dt))
+	b.ForceApplied = m.Vec2{}
 }
 
 func (b *Body) Copy() Body {
